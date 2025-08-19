@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카페 관리자 - 주문 관리 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+            min-height: 100vh;
+        }
+        
+        .order-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .order-card.pending {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        
+        .order-card.preparing {
+            border-left-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .order-card.ready {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+        
+        .order-card.completed {
+            border-left-color: #6b7280;
+            background: #f9fafb;
+        }
+        
+        .order-card.cancelled {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending { background: #fbbf24; color: #92400e; }
+        .status-preparing { background: #3b82f6; color: white; }
+        .status-ready { background: #10b981; color: white; }
+        .status-completed { background: #6b7280; color: white; }
+        .status-cancelled { background: #ef4444; color: white; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .tab-button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: white;
+            color: #6b7280;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .tab-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .tab-button:hover:not(.active) {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 2px;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-preparing {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-ready {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-completed {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-reopen {
+            background: #f59e0b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 알림 -->
+    <div id="notification" class="notification">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText">알림 메시지</span>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- 헤더 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">카페 관리자</h1>
+                    <p class="text-gray-600 mt-1">계산공업고등학교 식품생명과학과 카페 주문 관리</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="refreshOrders()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>새로고침
+                    </button>
+                    <button onclick="window.open('index.html', '_blank')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-external-link-alt mr-2"></i>키오스크 보기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 통계 대시보드 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div class="stats-card">
+                <div class="text-2xl font-bold text-orange-600" id="pendingCount">0</div>
+                <div class="text-sm text-gray-600">접수 대기</div>
+            </div>
+            <div class="stats-card">
+                <div class="text-2xl font-bold text-blue-600" id="preparingCount">0</div>
+                <div class="text-sm text-gray-600">준비 중</div>
+            </div>
+            <div class="stats-card">
+                <div class="text-2xl font-bold text-green-600" id="readyCount">0</div>
+                <div class="text-sm text-gray-600">준비 완료</div>
+            </div>
+            <div class="stats-card">
+                <div class="text-2xl font-bold text-purple-600" id="todayOrders">0</div>
+                <div class="text-sm text-gray-600">오늘 총 주문</div>
+            </div>
+            <div class="stats-card">
+                <div class="text-2xl font-bold text-green-600" id="todaySales">₩0</div>
+                <div class="text-sm text-gray-600">오늘 매출</div>
+            </div>
+        </div>
+
+        <!-- 필터 탭 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button class="tab-button active" data-status="all" onclick="filterOrders('all')">
+                    전체 주문
+                </button>
+                <button class="tab-button" data-status="pending" onclick="filterOrders('pending')">
+                    <i class="fas fa-clock mr-1"></i>접수 대기
+                </button>
+                <button class="tab-button" data-status="preparing" onclick="filterOrders('preparing')">
+                    <i class="fas fa-fire mr-1"></i>준비 중
+                </button>
+                <button class="tab-button" data-status="ready" onclick="filterOrders('ready')">
+                    <i class="fas fa-check mr-1"></i>준비 완료
+                </button>
+                <button class="tab-button" data-status="completed" onclick="filterOrders('completed')">
+                    <i class="fas fa-handshake mr-1"></i>수령 완료
+                </button>
+                <button class="tab-button" data-status="cancelled" onclick="filterOrders('cancelled')">
+                    <i class="fas fa-times mr-1"></i>취소됨
+                </button>
+            </div>
+        </div>
+
+        <!-- 주문 목록 -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">주문 목록</h2>
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-sync-alt mr-1" id="lastUpdateIcon"></i>
+                    마지막 업데이트: <span id="lastUpdateTime">-</span>
+                </div>
+            </div>
+
+            <div id="ordersList">
+                <div class="text-center py-12">
+                    <div class="loading mb-4"></div>
+                    <p class="text-gray-600">주문 데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주문 상세 모달 -->
+    <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">주문 상세 정보</h3>
+                <button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="orderDetailContent">
+                <!-- 주문 상세 내용이 여기에 동적으로 들어갑니다 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let allOrders = [];
+        let currentFilter = 'all';
+        
+        // API 기본 URL
+        const API_BASE = '';
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeAdmin();
+            
+            // 5초마다 자동 새로고침
+            setInterval(loadOrders, 5000);
+        });
+
+        // 관리자 페이지 초기화
+        async function initializeAdmin() {
+            try {
+                await loadOrders();
+                updateLastUpdateTime();
+            } catch (error) {
+                console.error('관리자 페이지 초기화 실패:', error);
+                showNotification('시스템 초기화에 실패했습니다.', 'error');
+            }
+        }
+
+        // 주문 데이터 로드
+        async function loadOrders() {
+            try {
+                const response = await fetch('tables/orders?limit=100&sort=created_at');
+                const result = await response.json();
+                allOrders = result.data || [];
+                
+                // 최신 주문부터 표시 (내림차순 정렬)
+                allOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                
+                updateStatistics();
+                displayOrders();
+                updateLastUpdateTime();
+            } catch (error) {
+                console.error('주문 데이터 로드 실패:', error);
+                showNotification('주문 데이터 로드에 실패했습니다.', 'error');
+            }
+        }
+
+        // 통계 업데이트
+        function updateStatistics() {
+            const today = new Date().toDateString();
+            const todayOrders = allOrders.filter(order => 
+                new Date(order.created_at).toDateString() === today
+            );
+
+            // 상태별 카운트
+            const statusCounts = {
+                pending: allOrders.filter(o => o.status === 'pending').length,
+                preparing: allOrders.filter(o => o.status === 'preparing').length,
+                ready: allOrders.filter(o => o.status === 'ready').length
+            };
+
+            // 오늘 매출 계산
+            const todaySales = todayOrders
+                .filter(o => o.status !== 'cancelled')
+                .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+            // DOM 업데이트
+            document.getElementById('pendingCount').textContent = statusCounts.pending;
+            document.getElementById('preparingCount').textContent = statusCounts.preparing;
+            document.getElementById('readyCount').textContent = statusCounts.ready;
+            document.getElementById('todayOrders').textContent = todayOrders.length;
+            document.getElementById('todaySales').textContent = `₩${todaySales.toLocaleString()}`;
+        }
+
+        // 주문 목록 표시
+        function displayOrders() {
+            const ordersList = document.getElementById('ordersList');
+            
+            let filteredOrders = allOrders;
+            if (currentFilter !== 'all') {
+                filteredOrders = allOrders.filter(order => order.status === currentFilter);
+            }
+
+            if (filteredOrders.length === 0) {
+                ordersList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-4"></i>
+                        <p>표시할 주문이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let ordersHTML = '<div class="grid gap-4">';
+            
+            filteredOrders.forEach(order => {
+                ordersHTML += createOrderCard(order);
+            });
+            
+            ordersHTML += '</div>';
+            ordersList.innerHTML = ordersHTML;
+        }
+
+        // 주문 카드 생성
+        function createOrderCard(order) {
+            const statusText = getStatusText(order.status);
+            const timeAgo = getTimeAgo(new Date(order.created_at));
+            const customerTypeText = getCustomerTypeText(order.customer_type);
+            const itemsText = order.items ? order.items.map(item => `${item.name} x${item.quantity}`).join(', ') : '상품 정보 없음';
+            
+            return `
+                <div class="order-card ${order.status} bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">${order.order_number}</h3>
+                            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                <span><i class="fas fa-clock mr-1"></i>${timeAgo}</span>
+                                <span><i class="fas fa-user mr-1"></i>${customerTypeText}</span>
+                                <span class="status-badge status-${order.status}">${statusText}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-green-600">₩${(order.total_amount || 0).toLocaleString()}</div>
+                            <div class="text-sm text-gray-500">${(order.items || []).reduce((sum, item) => sum + item.quantity, 0)}개 상품</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="text-sm text-gray-700 line-clamp-2">${itemsText}</div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <button onclick="viewOrderDetail('${order.id}')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            <i class="fas fa-eye mr-1"></i>상세보기
+                        </button>
+                        <div class="flex gap-2">
+                            ${getActionButtons(order)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 상태별 액션 버튼 생성
+        function getActionButtons(order) {
+            let buttons = '';
+            
+            switch (order.status) {
+                case 'pending':
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'preparing')" class="action-btn btn-preparing"><i class="fas fa-fire mr-1"></i>준비시작</button>`;
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'cancelled')" class="action-btn btn-cancel"><i class="fas fa-times mr-1"></i>취소</button>`;
+                    break;
+                case 'preparing':
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'ready')" class="action-btn btn-ready"><i class="fas fa-check mr-1"></i>준비완료</button>`;
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'cancelled')" class="action-btn btn-cancel"><i class="fas fa-times mr-1"></i>취소</button>`;
+                    break;
+                case 'ready':
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'completed')" class="action-btn btn-completed"><i class="fas fa-handshake mr-1"></i>수령완료</button>`;
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'preparing')" class="action-btn btn-preparing"><i class="fas fa-undo mr-1"></i>준비중으로</button>`;
+                    break;
+                case 'completed':
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'ready')" class="action-btn btn-ready"><i class="fas fa-undo mr-1"></i>준비완료로</button>`;
+                    break;
+                case 'cancelled':
+                    buttons += `<button onclick="updateOrderStatus('${order.id}', 'pending')" class="action-btn btn-reopen"><i class="fas fa-redo mr-1"></i>다시접수</button>`;
+                    break;
+            }
+            
+            return buttons;
+        }
+
+        // 주문 상태 업데이트
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const response = await fetch(`tables/orders/${orderId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    const statusText = getStatusText(newStatus);
+                    showNotification(`주문 상태가 '${statusText}'로 변경되었습니다.`);
+                    await loadOrders(); // 데이터 새로고침
+                } else {
+                    throw new Error('상태 업데이트 실패');
+                }
+            } catch (error) {
+                console.error('주문 상태 업데이트 실패:', error);
+                showNotification('주문 상태 업데이트에 실패했습니다.', 'error');
+            }
+        }
+
+        // 주문 상세 보기
+        async function viewOrderDetail(orderId) {
+            try {
+                const response = await fetch(`tables/orders/${orderId}`);
+                const order = await response.json();
+
+                if (!order) {
+                    throw new Error('주문 데이터를 찾을 수 없습니다.');
+                }
+
+                displayOrderDetail(order);
+                document.getElementById('orderDetailModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('주문 상세 로드 실패:', error);
+                showNotification('주문 상세 정보를 불러올 수 없습니다.', 'error');
+            }
+        }
+
+        // 주문 상세 정보 표시
+        function displayOrderDetail(order) {
+            const detailContent = document.getElementById('orderDetailContent');
+            const statusText = getStatusText(order.status);
+            const customerTypeText = getCustomerTypeText(order.customer_type);
+            const orderTime = new Date(order.created_at).toLocaleString('ko-KR');
+            
+            let itemsHTML = '';
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    itemsHTML += `
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-800">${item.name}</div>
+                                <div class="text-sm text-gray-600">₩${item.price.toLocaleString()} × ${item.quantity}</div>
+                            </div>
+                            <div class="font-bold text-green-600">₩${(item.subtotal || item.price * item.quantity).toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            detailContent.innerHTML = `
+                <div class="space-y-6">
+                    <!-- 주문 기본 정보 -->
+                    <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">주문번호</label>
+                            <div class="text-lg font-bold text-gray-800">${order.order_number}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">주문상태</label>
+                            <div><span class="status-badge status-${order.status}">${statusText}</span></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">주문시간</label>
+                            <div class="text-gray-800">${orderTime}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">고객구분</label>
+                            <div class="text-gray-800">${customerTypeText}</div>
+                        </div>
+                    </div>
+
+                    <!-- 주문 상품 -->
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">주문 상품</h4>
+                        <div class="space-y-2">
+                            ${itemsHTML}
+                        </div>
+                    </div>
+
+                    <!-- 결제 정보 -->
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600">소계</span>
+                            <span class="text-gray-800">₩${(order.subtotal || order.total_amount).toLocaleString()}</span>
+                        </div>
+                        ${order.discount > 0 ? `
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-green-600">할인 (${order.customer_type === 'student' ? '학생 10%' : ''})</span>
+                                <span class="text-green-600">-₩${order.discount.toLocaleString()}</span>
+                            </div>
+                        ` : ''}
+                        <hr class="border-gray-300 mb-2">
+                        <div class="flex justify-between items-center text-lg font-bold">
+                            <span class="text-gray-800">총 결제금액</span>
+                            <span class="text-green-600">₩${order.total_amount.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <!-- 액션 버튼 -->
+                    <div class="flex justify-center gap-3 pt-4">
+                        ${getActionButtons(order)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 주문 상세 모달 닫기
+        function closeDetailModal() {
+            document.getElementById('orderDetailModal').classList.add('hidden');
+        }
+
+        // 필터링
+        function filterOrders(status) {
+            currentFilter = status;
+            
+            // 탭 버튼 상태 업데이트
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-status="${status}"]`).classList.add('active');
+            
+            displayOrders();
+        }
+
+        // 주문 새로고침
+        async function refreshOrders() {
+            const refreshIcon = document.getElementById('lastUpdateIcon');
+            refreshIcon.classList.add('animate-spin');
+            
+            await loadOrders();
+            
+            setTimeout(() => {
+                refreshIcon.classList.remove('animate-spin');
+            }, 1000);
+            
+            showNotification('주문 목록이 새로고침되었습니다.');
+        }
+
+        // 상태 텍스트 반환
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '접수중',
+                'preparing': '준비중',
+                'ready': '준비완료',
+                'completed': '수령완료',
+                'cancelled': '취소됨'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 고객 구분 텍스트 반환
+        function getCustomerTypeText(type) {
+            const typeMap = {
+                'student': '학생',
+                'teacher': '교직원',
+                'visitor': '방문자'
+            };
+            return typeMap[type] || type;
+        }
+
+        // 시간 차이 계산
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / (1000 * 60));
+            
+            if (minutes < 1) return '방금 전';
+            if (minutes < 60) return `${minutes}분 전`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}시간 전`;
+            return `${Math.floor(hours / 24)}일 전`;
+        }
+
+        // 마지막 업데이트 시간 표시
+        function updateLastUpdateTime() {
+            const now = new Date().toLocaleString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('lastUpdateTime').textContent = now;
+        }
+
+        // 알림 표시
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notification.classList.remove('error');
+            if (type === 'error') {
+                notification.classList.add('error');
+            }
+            
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // 모달 외부 클릭 시 닫기
+        document.getElementById('orderDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetailModal();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeDetailModal();
+            }
+        });
+    </script>
+</body>
+</html>
