@@ -127,6 +127,14 @@
             color: #3b82f6;
         }
         
+        .tab-content {
+            display: block;
+        }
+        
+        .tab-content.hidden {
+            display: none;
+        }
+        
         .action-btn {
             padding: 8px 16px;
             border-radius: 8px;
@@ -224,41 +232,114 @@
         <!-- 필터 탭 -->
         <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div class="flex flex-wrap gap-2 justify-center">
-                <button class="tab-button active" data-status="all" onclick="filterOrders('all')">
-                    전체 주문
+                <button class="tab-button active" data-tab="orders" onclick="showTab('orders')">
+                    <i class="fas fa-list mr-1"></i>주문 관리
                 </button>
-                <button class="tab-button" data-status="pending" onclick="filterOrders('pending')">
-                    <i class="fas fa-clock mr-1"></i>접수 대기
-                </button>
-                <button class="tab-button" data-status="preparing" onclick="filterOrders('preparing')">
-                    <i class="fas fa-fire mr-1"></i>준비 중
-                </button>
-                <button class="tab-button" data-status="ready" onclick="filterOrders('ready')">
-                    <i class="fas fa-check mr-1"></i>준비 완료
-                </button>
-                <button class="tab-button" data-status="completed" onclick="filterOrders('completed')">
-                    <i class="fas fa-handshake mr-1"></i>수령 완료
-                </button>
-                <button class="tab-button" data-status="cancelled" onclick="filterOrders('cancelled')">
-                    <i class="fas fa-times mr-1"></i>취소됨
+                <button class="tab-button" data-tab="menu" onclick="showTab('menu')">
+                    <i class="fas fa-plus-circle mr-1"></i>메뉴 등록
                 </button>
             </div>
         </div>
 
-        <!-- 주문 목록 -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">주문 목록</h2>
-                <div class="text-sm text-gray-600">
-                    <i class="fas fa-sync-alt mr-1" id="lastUpdateIcon"></i>
-                    마지막 업데이트: <span id="lastUpdateTime">-</span>
+        <!-- 주문 관리 탭 -->
+        <div id="ordersTab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex flex-wrap gap-2 justify-center">
+                    <button class="tab-button active" data-status="all" onclick="filterOrders('all')">
+                        전체 주문
+                    </button>
+                    <button class="tab-button" data-status="pending" onclick="filterOrders('pending')">
+                        <i class="fas fa-clock mr-1"></i>접수 대기
+                    </button>
+                    <button class="tab-button" data-status="preparing" onclick="filterOrders('preparing')">
+                        <i class="fas fa-fire mr-1"></i>준비 중
+                    </button>
+                    <button class="tab-button" data-status="ready" onclick="filterOrders('ready')">
+                        <i class="fas fa-check mr-1"></i>준비 완료
+                    </button>
+                    <button class="tab-button" data-status="completed" onclick="filterOrders('completed')">
+                        <i class="fas fa-handshake mr-1"></i>수령 완료
+                    </button>
+                    <button class="tab-button" data-status="cancelled" onclick="filterOrders('cancelled')">
+                        <i class="fas fa-times mr-1"></i>취소됨
+                    </button>
                 </div>
             </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">주문 목록</h2>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-sync-alt mr-1" id="lastUpdateIcon"></i>
+                        마지막 업데이트: <span id="lastUpdateTime">-</span>
+                    </div>
+                </div>
 
-            <div id="ordersList">
-                <div class="text-center py-12">
-                    <div class="loading mb-4"></div>
-                    <p class="text-gray-600">주문 데이터를 불러오는 중...</p>
+                <div id="ordersList">
+                    <div class="text-center py-12">
+                        <div class="loading mb-4"></div>
+                        <p class="text-gray-600">주문 데이터를 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메뉴 등록 탭 -->
+        <div id="menuTab" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6">새 메뉴 등록</h2>
+                
+                <form id="menuForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">메뉴명</label>
+                        <input type="text" id="menuName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 아메리카노" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
+                        <select id="menuCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="coffee">커피</option>
+                            <option value="non-coffee">논커피</option>
+                            <option value="dessert">디저트</option>
+                            <option value="bakery">베이커리</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">메뉴 설명</label>
+                        <textarea id="menuDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="메뉴에 대한 간단한 설명을 입력하세요"></textarea>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">이미지 URL</label>
+                        <input type="url" id="menuImageUrl" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="https://example.com/image.jpg (선택사항)">
+                    </div>
+                    
+                    <div class="md:col-span-2 flex gap-4">
+                        <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>메뉴 등록
+                        </button>
+                        <button type="button" onclick="resetMenuForm()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-undo mr-2"></i>초기화
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 등록된 메뉴 목록 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">등록된 메뉴 목록</h2>
+                    <button onclick="loadMenuList()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>새로고침
+                    </button>
+                </div>
+                
+                <div id="menuList">
+                    <div class="text-center py-12">
+                        <div class="loading mb-4"></div>
+                        <p class="text-gray-600">메뉴 목록을 불러오는 중...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -284,6 +365,7 @@
         // 전역 변수
         let allOrders = [];
         let currentFilter = 'all';
+        let currentTab = 'orders';
         
         // API 기본 URL
         const API_BASE = '';
@@ -300,7 +382,9 @@
         async function initializeAdmin() {
             try {
                 await loadOrders();
+                await loadMenuList();
                 updateLastUpdateTime();
+                setupMenuForm();
             } catch (error) {
                 console.error('관리자 페이지 초기화 실패:', error);
                 showNotification('시스템 초기화에 실패했습니다.', 'error');
@@ -311,6 +395,9 @@
         async function loadOrders() {
             try {
                 const response = await fetch('tables/orders?limit=100&sort=created_at');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const result = await response.json();
                 allOrders = result.data || [];
                 
@@ -322,7 +409,21 @@
                 updateLastUpdateTime();
             } catch (error) {
                 console.error('주문 데이터 로드 실패:', error);
-                showNotification('주문 데이터 로드에 실패했습니다.', 'error');
+                // 더 구체적인 에러 메시지
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showNotification('네트워크 연결을 확인해주세요.', 'error');
+                } else {
+                    showNotification('주문 데이터 로드에 실패했습니다. 잠시 후 다시 시도해주세요.', 'error');
+                }
+                
+                // 빈 주문 목록 표시
+                const ordersList = document.getElementById('ordersList');
+                ordersList.innerHTML = `
+                    <div class="text-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p>주문 데이터를 불러올 수 없습니다.<br>네트워크 상태를 확인하고 새로고침해주세요.</p>
+                    </div>
+                `;
             }
         }
 
@@ -581,7 +682,7 @@
             currentFilter = status;
             
             // 탭 버튼 상태 업데이트
-            document.querySelectorAll('.tab-button').forEach(btn => {
+            document.querySelectorAll('[data-status]').forEach(btn => {
                 btn.classList.remove('active');
             });
             document.querySelector(`[data-status="${status}"]`).classList.add('active');
@@ -603,6 +704,204 @@
             showNotification('주문 목록이 새로고침되었습니다.');
         }
 
+        // 탭 전환
+        function showTab(tabName) {
+            currentTab = tabName;
+            
+            // 모든 탭 버튼 비활성화
+            document.querySelectorAll('[data-tab]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 클릭한 탭 버튼 활성화
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // 모든 탭 컨텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // 선택한 탭 컨텐츠 보이기
+            if (tabName === 'orders') {
+                document.getElementById('ordersTab').classList.remove('hidden');
+            } else if (tabName === 'menu') {
+                document.getElementById('menuTab').classList.remove('hidden');
+                loadMenuList();
+            }
+        }
+
+        // 메뉴 폼 설정
+        function setupMenuForm() {
+            const form = document.getElementById('menuForm');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await addNewMenu();
+            });
+        }
+
+        // 새 메뉴 추가
+        async function addNewMenu() {
+            const menuName = document.getElementById('menuName').value.trim();
+            const menuCategory = document.getElementById('menuCategory').value;
+            const menuDescription = document.getElementById('menuDescription').value.trim();
+            const menuImageUrl = document.getElementById('menuImageUrl').value.trim();
+            
+            if (!menuName) {
+                alert('메뉴명을 입력해주세요.');
+                return;
+            }
+            
+            const menuData = {
+                id: `menu-${Date.now()}`,
+                name: menuName,
+                category: menuCategory,
+                price: 0, // 모든 제품 무료
+                description: menuDescription || '맛있는 메뉴입니다',
+                image_url: menuImageUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=300&h=200&fit=crop',
+                available: true,
+                display_order: Date.now()
+            };
+            
+            try {
+                const response = await fetch('tables/menu_items', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(menuData)
+                });
+                
+                if (response.ok) {
+                    showNotification(`${menuName} 메뉴가 등록되었습니다!`);
+                    resetMenuForm();
+                    await loadMenuList();
+                } else {
+                    throw new Error('메뉴 등록 실패');
+                }
+            } catch (error) {
+                console.error('메뉴 등록 실패:', error);
+                showNotification('메뉴 등록에 실패했습니다.', 'error');
+            }
+        }
+
+        // 메뉴 폼 초기화
+        function resetMenuForm() {
+            document.getElementById('menuForm').reset();
+        }
+
+        // 메뉴 목록 로드
+        async function loadMenuList() {
+            const menuListDiv = document.getElementById('menuList');
+            menuListDiv.innerHTML = '<div class="text-center py-12"><div class="loading mb-4"></div><p class="text-gray-600">메뉴 목록을 불러오는 중...</p></div>';
+            
+            try {
+                const response = await fetch('tables/menu_items?limit=100');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                const menuItems = result.data || [];
+                
+                if (menuItems.length === 0) {
+                    menuListDiv.innerHTML = `
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-utensils text-4xl mb-4"></i>
+                            <p>등록된 메뉴가 없습니다.<br>새 메뉴를 등록해보세요!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // 메뉴 목록 표시
+                let menuHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                
+                menuItems.forEach(menu => {
+                    const priceDisplay = (menu.price === 0 || !menu.price) ? '무료' : `₩${menu.price.toLocaleString()}`;
+                    
+                    menuHTML += `
+                        <div class="bg-gray-50 rounded-xl p-4 border">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-gray-800">${menu.name}</h4>
+                                    <p class="text-sm text-gray-600">${menu.category}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="toggleMenuAvailability('${menu.id}', ${!menu.available})" 
+                                            class="px-2 py-1 text-xs rounded ${menu.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                        ${menu.available ? '활성' : '비활성'}
+                                    </button>
+                                    <button onclick="deleteMenu('${menu.id}')" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">
+                                        삭제
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">${menu.description}</p>
+                            <div class="text-lg font-bold text-green-600">${priceDisplay}</div>
+                        </div>
+                    `;
+                });
+                
+                menuHTML += '</div>';
+                menuListDiv.innerHTML = menuHTML;
+                
+            } catch (error) {
+                console.error('메뉴 목록 로드 실패:', error);
+                menuListDiv.innerHTML = `
+                    <div class="text-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p>메뉴 목록을 불러올 수 없습니다.<br>네트워크 상태를 확인해주세요.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 메뉴 활성/비활성 토글
+        async function toggleMenuAvailability(menuId, newStatus) {
+            try {
+                const response = await fetch(`tables/menu_items/${menuId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ available: newStatus })
+                });
+                
+                if (response.ok) {
+                    const statusText = newStatus ? '활성화' : '비활성화';
+                    showNotification(`메뉴가 ${statusText}되었습니다.`);
+                    await loadMenuList();
+                } else {
+                    throw new Error('메뉴 상태 변경 실패');
+                }
+            } catch (error) {
+                console.error('메뉴 상태 변경 실패:', error);
+                showNotification('메뉴 상태 변경에 실패했습니다.', 'error');
+            }
+        }
+
+        // 메뉴 삭제
+        async function deleteMenu(menuId) {
+            if (!confirm('이 메뉴를 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`tables/menu_items/${menuId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showNotification('메뉴가 삭제되었습니다.');
+                    await loadMenuList();
+                } else {
+                    throw new Error('메뉴 삭제 실패');
+                }
+            } catch (error) {
+                console.error('메뉴 삭제 실패:', error);
+                showNotification('메뉴 삭제에 실패했습니다.', 'error');
+            }
+        }
+
         // 상태 텍스트 반환
         function getStatusText(status) {
             const statusMap = {
@@ -620,7 +919,8 @@
             const typeMap = {
                 'student': '학생',
                 'teacher': '교직원',
-                'visitor': '방문자'
+                'visitor': '방문자',
+                'general': '일반'
             };
             return typeMap[type] || type;
         }
